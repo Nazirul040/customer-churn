@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+myenv
+model/model.ipynb 
+model/Telco_customer_churn.xlsx

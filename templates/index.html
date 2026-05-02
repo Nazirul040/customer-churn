@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn Predictor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Base Reset & Typography */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; color: #333; display: flex; justify-content: center; padding: 40px 20px; }
+        
+        /* Container Styling */
+        .container { background-color: #ffffff; max-width: 900px; width: 100%; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05); }
+        .form-header { text-align: center; margin-bottom: 30px; }
+        .form-header h1 { font-size: 28px; color: #1a202c; margin-bottom: 8px; font-weight: 600; }
+        .form-header p { color: #718096; font-size: 15px; }
+
+        /* Form Layout */
+        fieldset { border: none; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #edf2f7; }
+        fieldset:last-of-type { border-bottom: none; margin-bottom: 20px; }
+        legend { font-size: 18px; font-weight: 600; color: #2d3748; margin-bottom: 15px; width: 100%; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+
+        /* Inputs & Labels */
+        .input-group { display: flex; flex-direction: column; }
+        label { font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input[type="number"], select { width: 100%; padding: 12px 16px; font-size: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; color: #2d3748; transition: all 0.2s ease; font-family: inherit; }
+        input[type="number"]:focus, select:focus { outline: none; border-color: #3182ce; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1); }
+
+        /* Button Styling */
+        .submit-btn { width: 100%; background-color: #3182ce; color: white; font-size: 16px; font-weight: 600; padding: 15px; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; margin-top: 10px; }
+        .submit-btn:hover { background-color: #2b6cb0; }
+        .submit-btn:active { transform: scale(0.98); }
+        .submit-btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
+
+        /* Result Box */
+        #result-box { display: none; margin-top: 25px; padding: 20px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 18px; }
+        .result-churn { background-color: #fed7d7; color: #c53030; border: 1px solid #feb2b2; }
+        .result-stay { background-color: #c6f6d5; color: #2f855a; border: 1px solid #9ae6b4; }
+        .result-error { background-color: #feebc8; color: #c05621; border: 1px solid #fbd38d; }
+
+        @media (max-width: 600px) { .container { padding: 20px; } .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="form-header">
+            <h1>Customer Churn Predictor</h1>
+            <p>Enter the customer details below to predict the likelihood of churn.</p>
+        </header>
+
+        <!-- No 'action' attribute because JavaScript handles the submission -->
+        <form id="churnForm" class="churn-form">
+            
+            <fieldset>
+                <legend>Demographics & Household</legend>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Gender</label>
+                        <!-- Updated to send actual strings for get_dummies -->
+                        <select name="Gender" required>
+                            <option value="" disabled selected>Select...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Senior Citizen</label>
+                        <select name="Senior Citizen" required>
+                            <option value="" disabled selected>Select...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Partner</label>
+                        <select name="Partner" required>
+                            <option value="" disabled selected>Select...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Dependents</label>
+                        <select name="Dependents" required>
+                            <option value="" disabled selected>Select...</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Subscribed Services</legend>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Phone Service</label>
+                        <select name="Phone Service" required>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Multiple Lines</label>
+                        <select name="Multiple Lines" required>
+                            <option value="No phone service">No phone service</option>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Internet Service</label>
+                        <select name="Internet Service" required>
+                            <option value="DSL">DSL</option>
+                            <option value="Fiber optic">Fiber optic</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Online Security</label>
+                        <select name="Online Security" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Online Backup</label>
+                        <select name="Online Backup" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Device Protection</label>
+                        <select name="Device Protection" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Tech Support</label>
+                        <select name="Tech Support" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Streaming TV</label>
+                        <select name="Streaming TV" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Streaming Movies</label>
+                        <select name="Streaming Movies" required>
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No internet service">No internet service</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Account Information</legend>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>Tenure (Months)</label>
+                        <input type="number" name="Tenure Months" min="0" placeholder="e.g., 24" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Contract</label>
+                        <select name="Contract" required>
+                            <option value="Month-to-month">Month-to-month</option>
+                            <option value="One year">One year</option>
+                            <option value="Two year">Two year</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Paperless Billing</label>
+                        <select name="Paperless Billing" required>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Payment Method</label>
+                        <select name="Payment Method" required>
+                            <option value="Electronic check">Electronic check</option>
+                            <option value="Mailed check">Mailed check</option>
+                            <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
+                            <option value="Credit card (automatic)">Credit card (automatic)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Monthly Charges ($)</label>
+                        <input type="number" name="Monthly Charges" step="0.01" min="0" placeholder="e.g., 65.50" required>
+                    </div>
+                    <!-- Added missing CLTV input here -->
+                    <div class="input-group">
+                        <label>CLTV (Customer Lifetime Value)</label>
+                        <input type="number" name="CLTV" min="0" placeholder="e.g., 5000" required>
+                    </div>
+                </div>
+            </fieldset>
+
+            <button type="submit" class="submit-btn" id="submitBtn">Predict Churn Risk</button>
+        </form>
+
+        <!-- Message Box for Results -->
+        <div id="result-box"></div>
+    </div>
+
+    <script>
+        document.getElementById('churnForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); // Prevent page reload
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultBox = document.getElementById('result-box');
+            
+            // Set Loading state
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Analyzing...';
+            resultBox.style.display = 'none';
+            resultBox.className = '';
+
+            // Gather all form data into a JSON object
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            try {
+                // Send JSON payload to Flask backend
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    resultBox.style.display = 'block';
+                    // Interpret prediction: Assuming 1 = Churn, 0 = Stay
+                    if (result.prediction === 1) {
+                        resultBox.innerText = '⚠️ High Risk: This customer is likely to CHURN.';
+                        resultBox.classList.add('result-churn');
+                    } else {
+                        resultBox.innerText = '✅ Low Risk: This customer is likely to STAY.';
+                        resultBox.classList.add('result-stay');
+                    }
+                } else {
+                    throw new Error(result.error || 'Server error occurred');
+                }
+            } catch (error) {
+                resultBox.style.display = 'block';
+                resultBox.innerText = 'Error: ' + error.message;
+                resultBox.classList.add('result-error');
+            } finally {
+                // Reset button
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Predict Churn Risk';
+            }
+        });
+    </script>
+</body>
+</html>
