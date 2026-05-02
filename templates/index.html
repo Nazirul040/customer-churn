@@ -221,59 +221,60 @@
 
     <script>
         document.getElementById('churnForm').addEventListener('submit', async function(e) {
-            e.preventDefault(); // Prevent page reload
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const resultBox = document.getElementById('result-box');
-            
-            // Set Loading state
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'Analyzing...';
-            resultBox.style.display = 'none';
-            resultBox.className = '';
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const resultBox = document.getElementById('result-box');
+    
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Analyzing...';
+    resultBox.style.display = 'none';
 
-            // Gather all form data into a JSON object
-            const formData = new FormData(this);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+    const formData = new FormData(this);
+    const data = {};
+    formData.forEach((value, key) => {
+        data[key] = value;
+    });
 
-            try {
-                // Send JSON payload to Flask backend
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    resultBox.style.display = 'block';
-                    // Interpret prediction: Assuming 1 = Churn, 0 = Stay
-                    if (result.prediction === 1) {
-                        resultBox.innerText = '⚠️ High Risk: This customer is likely to CHURN.';
-                        resultBox.classList.add('result-churn');
-                    } else {
-                        resultBox.innerText = '✅ Low Risk: This customer is likely to STAY.';
-                        resultBox.classList.add('result-stay');
-                    }
-                } else {
-                    throw new Error(result.error || 'Server error occurred');
-                }
-            } catch (error) {
-                resultBox.style.display = 'block';
-                resultBox.innerText = 'Error: ' + error.message;
-                resultBox.classList.add('result-error');
-            } finally {
-                // Reset button
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'Predict Churn Risk';
-            }
+    try {
+        const response = await fetch('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
         });
+
+        // Check if the server actually returned JSON
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await response.text();
+            console.error("Server returned non-JSON:", text);
+            throw new Error("Server error: The backend crashed or returned an invalid response.");
+        }
+
+        const result = await response.json();
+
+        if (response.ok) {
+            resultBox.style.display = 'block';
+            if (result.prediction === 1) {
+                resultBox.innerText = '⚠️ High Risk: This customer is likely to CHURN.';
+                resultBox.className = 'result-churn'; // Ensure CSS classes match
+            } else {
+                resultBox.innerText = '✅ Low Risk: This customer is likely to STAY.';
+                resultBox.className = 'result-stay';
+            }
+        } else {
+            throw new Error(result.error || 'Prediction failed');
+        }
+    } catch (error) {
+        resultBox.style.display = 'block';
+        resultBox.innerText = error.message;
+        resultBox.className = 'result-error';
+        console.error("Fetch Error:", error);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Predict Churn Risk';
+    }
+});
     </script>
 </body>
 </html>

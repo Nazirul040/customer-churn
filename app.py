@@ -1,17 +1,25 @@
+import os
+# Suppress TensorFlow logs if they exist
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 from flask import Flask, request, render_template, jsonify
 import numpy as np
 import pandas as pd
 import pickle
 
+app = Flask(__name__)
+
+# Load model and scaler using relative paths for Render
 try:
     with open('model/model.pkl', 'rb') as f:
         model = pickle.load(f)
     with open('model/scaler.pkl', 'rb') as f:
         scaler = pickle.load(f)
-except FileNotFoundError:
+    print("Model and Scaler loaded successfully!")
+except Exception as e:
     model = None
     scaler = None
-    print("Warning: Model or scaler files not found in 'model/' directory.")
+    print(f"CRITICAL ERROR: Could not load models. Error: {e}")
 
 MODEL_COLUMNS = [
     'Tenure Months', 'Monthly Charges', 'CLTV',
@@ -34,8 +42,6 @@ MODEL_COLUMNS = [
     'Payment Method_Electronic check', 'Payment Method_Mailed check'
 ]
 
-app = Flask(__name__)
-
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -43,28 +49,29 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None or scaler is None:
-        return jsonify({'error': 'Model or scaler not loaded properly. Check server logs.'}), 500
-    
-    data = request.get_json()
+        return jsonify({'error': 'Model files not found on server.'}), 500
     
     try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data received'}), 400
+
+        # Create DataFrame and Process
         df = pd.DataFrame([data])
-        
         df_encoded = pd.get_dummies(df)
-        
         df_encoded = df_encoded.reindex(columns=MODEL_COLUMNS, fill_value=0)
         
-        df_encoded = df_encoded.astype(int)
+        # Ensure all columns are numeric
+        df_encoded = df_encoded.apply(pd.to_numeric)
         
         input_scaled = scaler.transform(df_encoded)
-        prediction_raw = model.predict(input_scaled)
-        prediction = int(prediction_raw[0])
+        prediction = int(model.predict(input_scaled)[0])
 
         return jsonify({'prediction': prediction})
 
     except Exception as e:
-        print(f"An error occurred: {e}")
-        return jsonify({'error': f'An error occurred processing the data: {str(e)}'}), 500
+        print(f"Prediction Error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
